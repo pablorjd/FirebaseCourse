@@ -1,20 +1,19 @@
 package dev.pablorjd.coursefirebase1
 
 import android.os.Bundle
-import com.google.android.material.snackbar.Snackbar
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
-import android.view.Menu
-import android.view.MenuItem
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.ktx.getValue
+import dev.pablorjd.coursefirebase1.data.FirebaseInstance
 import dev.pablorjd.coursefirebase1.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
-
-    private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
+
+    private lateinit var firebaseInstance: FirebaseInstance
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,38 +21,32 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setSupportActionBar(binding.toolbar)
+        firebaseInstance = FirebaseInstance(this)
 
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        appBarConfiguration = AppBarConfiguration(navController.graph)
-        setupActionBarWithNavController(navController, appBarConfiguration)
+        setUI()
+        setUpListeners()
 
-        binding.fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null)
-                .setAnchorView(R.id.fab).show()
+
+    }
+
+    private fun setUpListeners() {
+        val postLitener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val data = snapshot.getValue<String>()
+
+                if (data != null) binding.tvResultado.text = data
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.i("Error Logs", error.details)
+            }
         }
+        firebaseInstance.setUpDataBaseListener(postLitener)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        return when (item.itemId) {
-            R.id.action_settings -> true
-            else -> super.onOptionsItemSelected(item)
+    private fun setUI() {
+        binding.btnUpdate.setOnClickListener {
+            firebaseInstance.writeOfFirebase()
         }
-    }
-
-    override fun onSupportNavigateUp(): Boolean {
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        return navController.navigateUp(appBarConfiguration)
-                || super.onSupportNavigateUp()
     }
 }
